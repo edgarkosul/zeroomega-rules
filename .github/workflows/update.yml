@@ -1,0 +1,49 @@
+name: Update ZeroOmega rules
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 4 * * *"
+  push:
+    branches:
+      - main
+    paths:
+      - convert.py
+      - .github/workflows/update.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: zeroomega-rules
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Generate zeroomega.txt
+        run: python3 convert.py
+
+      - name: Commit updated rules
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add zeroomega.txt
+
+          if git diff --cached --quiet; then
+            echo "Rules have not changed."
+            exit 0
+          fi
+
+          git commit -m "Update ZeroOmega rules"
+          git push origin HEAD:main
